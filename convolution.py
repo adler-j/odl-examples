@@ -7,9 +7,9 @@ from builtins import super
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import ndimage
-
-# ODL
 import odl
+
+# Helper
 from convolution_helper import Difference
 
 
@@ -17,6 +17,7 @@ class Convolution(odl.LinearOperator):
     def __init__(self, space, kernel, adjkernel):
         self.kernel = kernel
         self.adjkernel = adjkernel
+        self.scale = kernel.space.domain.volume / len(kernel)
         
         super().__init__(domain=space, range=space)
 
@@ -25,6 +26,8 @@ class Convolution(odl.LinearOperator):
                          self.kernel.ntuple.data.reshape(self.kernel.shape),
                          output=out.ntuple.data.reshape(out.shape),
                          mode='constant')
+                         
+        out *= self.scale
 
     @property
     def adjoint(self):
@@ -33,11 +36,11 @@ class Convolution(odl.LinearOperator):
 def ind_fun(x, y):
     b = np.broadcast(x, y)
     z = np.zeros(b.shape)
-    z[x**2 + y**2 <= 0.5**2] = 1
+    z[(x-0.1)**2 + y**2 <= 0.5**2] = 1
     return z
 
 def kernel(x, y):
-    return np.exp(-(x**2 + y**2)/(2*0.05**2))
+    return np.exp(-(x**2 + (y-0.25)**2)/(2*0.04**2))
     
 def adjkernel(x, y):
     return kernel(-x, -y)
@@ -52,7 +55,7 @@ adjkernel = kernel_domain.element(adjkernel)
 data = domain.element(ind_fun)
 
 # Discretization parameters
-n = 50
+n = 60
 nPoints = np.array([n+1, n+1])
 nPointsKernel = np.array([2*n+1, 2*n+1])
 
@@ -68,11 +71,20 @@ disc_data = disc_domain.element(data)
 # Create operator
 conv = Convolution(disc_domain, disc_kernel, disc_adjkernel)
 
+# Calculate result
 result = conv(disc_data)
 
-noisy_result = result + disc_domain.element(np.random.randn(*nPoints) * 0.4 * result.asarray().mean())
+# Add noise
+noisy_result = result + disc_domain.element(np.random.randn(*nPoints) * 1.0 * result.asarray().mean())
 
-# Dampening parameter for landweber
+# Show the result
+plt.figure()
+plt.imshow(result.asarray())
+
+plt.figure()
+plt.imshow(noisy_result.asarray())
+
+# Number of iterations
 iterations = 10
 
 # Display partial
@@ -80,26 +92,32 @@ def show(result):
     plt.plot(result.asarray()[:,n//2])
 partial = odl.operator.solvers.ForEachPartial(show)
 
+# Norm calculator used in landweber
 def calc_norm(operator):
     return operator(disc_data).norm() / disc_data.norm()
 
 # Test Landweber
 plt.figure()
 show(disc_data)
-odl.operator.solvers.landweber(conv, disc_domain.zero(), noisy_result, iterations, 1.0/calc_norm(conv)**2, partial)
+x = disc_domain.zero()
+odl.operator.solvers.landweber(conv, x, noisy_result, iterations, 1.0/calc_norm(conv)**2, partial)
+plt.figure(); plt.imshow(x.asarray())
 
 # Test CGN
 plt.figure()
 show(disc_data)
-odl.operator.solvers.conjugate_gradient_normal(conv, disc_domain.zero(), noisy_result, iterations, partial)
+x = disc_domain.zero()
+odl.operator.solvers.conjugate_gradient_normal(conv, x, noisy_result, iterations, partial)
+plt.figure(); plt.imshow(x.asarray())
 
 #Tichonov reglarized conjugate gradient
 Q = Difference(disc_domain)
-la = 20.0
+la = 0.00003
 regularized_conv = conv.T * conv + la * Q.T * Q
 plt.figure()
 show(disc_data)
-odl.operator.solvers.conjugate_gradient(regularized_conv, disc_domain.zero(), conv.T(noisy_result), iterations, partial)
-#odl.operator.solvers.landweber(regularized_conv, disc_domain.zero(), conv.T(noisy_result), iterations, 1.0/calc_norm(regularized_conv)**2, partial)
+x = disc_domain.zero()
+odl.operator.solvers.conjugate_gradient(regularized_conv, x, conv.T(noisy_result), iterations, partial)
+plt.figure(); plt.imshow(x.asarray())
 
 plt.show()
