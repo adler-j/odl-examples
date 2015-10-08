@@ -40,7 +40,7 @@ def ind_fun(x, y):
     return z
 
 def kernel(x, y):
-    return np.exp(-(x**2 + (y-0.25)**2)/(2*0.04**2))
+    return np.exp(-(x**2 + 4*(y-0.25)**2)/(2*0.05**2))
     
 def adjkernel(x, y):
     return kernel(-x, -y)
@@ -55,7 +55,7 @@ adjkernel = kernel_domain.element(adjkernel)
 data = domain.element(ind_fun)
 
 # Discretization parameters
-n = 60
+n = 100
 nPoints = np.array([n+1, n+1])
 nPointsKernel = np.array([2*n+1, 2*n+1])
 
@@ -85,7 +85,7 @@ plt.figure()
 plt.imshow(noisy_result.asarray())
 
 # Number of iterations
-iterations = 10
+iterations = 5
 
 # Display partial
 def show(result):
@@ -100,7 +100,7 @@ def calc_norm(operator):
 plt.figure()
 show(disc_data)
 x = disc_domain.zero()
-odl.operator.solvers.landweber(conv, x, noisy_result, iterations, 1.0/calc_norm(conv)**2, partial)
+odl.operator.solvers.landweber(conv, x, noisy_result, iterations, 0.5/calc_norm(conv)**2, partial)
 plt.figure(); plt.imshow(x.asarray())
 
 # Test CGN
@@ -112,7 +112,7 @@ plt.figure(); plt.imshow(x.asarray())
 
 #Tichonov reglarized conjugate gradient
 Q = Difference(disc_domain)
-la = 0.00003
+la = 0.0001
 regularized_conv = conv.T * conv + la * Q.T * Q
 plt.figure()
 show(disc_data)
