@@ -14,7 +14,7 @@ class Difference(odl.LinearOperator):
     """A operator that returns the forward difference
     """
     def __init__(self, space):        
-        super().__init__(domain=space, range=odl.ProductSpace(space, 2))
+        super().__init__(space, odl.ProductSpace(space, 2))
 
     def _apply(self, rhs, out):
         asarr = rhs.asarray()
@@ -38,7 +38,7 @@ class DifferenceAdjoint(odl.LinearOperator):
     the negative backwards difference
     """
     def __init__(self, space):
-        super().__init__(domain=odl.ProductSpace(space, 2), range=space)
+        super().__init__(odl.ProductSpace(space, 2), space)
 
     def _apply(self, rhs, out):
         dx = rhs[0].asarray()
