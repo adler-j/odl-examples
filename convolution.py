@@ -7,7 +7,6 @@ from builtins import super
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
-import scipy.signal
 import odl
 
 # Helper
@@ -72,7 +71,7 @@ disc_data = disc_domain.element(data)
 
 # Create operator
 conv = Convolution(disc_domain, disc_kernel, disc_adjkernel)
-fftconv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
+#conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
 
 # Calculate result
 result = conv(disc_data)

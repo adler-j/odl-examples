@@ -8,7 +8,7 @@ from builtins import super
 
 import scipy.signal
 import numpy as np
-import odl
+import odl    
 
 class Difference(odl.LinearOperator):
     """A operator that returns the forward difference
