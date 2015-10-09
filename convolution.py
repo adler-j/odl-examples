@@ -6,11 +6,12 @@ from builtins import super
 # External
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy import ndimage
+import scipy
+import scipy.signal
 import odl
 
 # Helper
-from convolution_helper import Difference
+from convolution_helper import Difference, FFTConvolution
 
 
 class Convolution(odl.LinearOperator):
@@ -22,10 +23,9 @@ class Convolution(odl.LinearOperator):
         super().__init__(space, space)
 
     def _apply(self, rhs, out):
-        ndimage.convolve(rhs.asarray(), 
-                         self.kernel.asarray(),
-                         output=out.asarray(),
-                         mode='constant')
+        scipy.ndimage.convolve(rhs.asarray(), 
+                               self.kernel.asarray(),
+                               output=out.asarray())
                          
         out *= self.scale
 
@@ -72,6 +72,7 @@ disc_data = disc_domain.element(data)
 
 # Create operator
 conv = Convolution(disc_domain, disc_kernel, disc_adjkernel)
+fftconv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
 
 # Calculate result
 result = conv(disc_data)

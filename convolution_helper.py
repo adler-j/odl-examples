@@ -6,6 +6,7 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import super
 
+import scipy.signal
 import numpy as np
 import odl
 
@@ -54,3 +55,24 @@ class DifferenceAdjoint(odl.LinearOperator):
     @property
     def adjoint(self):
         return Difference(self.range)
+        
+class FFTConvolution(odl.LinearOperator):
+    """ Optimized version of the convolution operator
+    """
+    def __init__(self, space, kernel, adjkernel):
+        self.kernel = kernel
+        self.adjkernel = adjkernel
+        self.scale = kernel.space.domain.volume / len(kernel)
+        
+        super().__init__(space, space)
+
+    def _apply(self, rhs, out):
+        out[:] = scipy.signal.fftconvolve(rhs.asarray(), 
+                                          self.kernel.asarray(),
+                                          mode='same')
+                         
+        out *= self.scale
+
+    @property
+    def adjoint(self):
+        return FFTConvolution(self.domain, self.adjkernel, self.kernel)
