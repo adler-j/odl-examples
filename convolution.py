@@ -19,12 +19,12 @@ class Convolution(odl.LinearOperator):
         self.adjkernel = adjkernel
         self.scale = kernel.space.domain.volume / len(kernel)
         
-        super().__init__(domain=space, range=space)
+        super().__init__(space, space)
 
     def _apply(self, rhs, out):
-        ndimage.convolve(rhs.ntuple.data.reshape(rhs.shape), 
-                         self.kernel.ntuple.data.reshape(self.kernel.shape),
-                         output=out.ntuple.data.reshape(out.shape),
+        ndimage.convolve(rhs.asarray(), 
+                         self.kernel.asarray(),
+                         output=out.asarray(),
                          mode='constant')
                          
         out *= self.scale
@@ -40,7 +40,9 @@ def ind_fun(x, y):
     return z
 
 def kernel(x, y):
-    return np.exp(-(x**2 + 4*(y-0.25)**2)/(2*0.05**2))
+    mean = [0.0, 0.25]
+    std = [0.05, 0.05]
+    return np.exp(-(((x-mean[0])/std[0])**2 + ((y-mean[1])/std[1])**2))
     
 def adjkernel(x, y):
     return kernel(-x, -y)
