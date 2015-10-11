@@ -12,7 +12,6 @@ import odl
 # Helper
 from convolution_helper import Difference, FFTConvolution
 
-
 class Convolution(odl.LinearOperator):
     def __init__(self, space, kernel, adjkernel):
         self.kernel = kernel
@@ -70,8 +69,13 @@ disc_adjkernel = disc_kernel_domain.element(adjkernel)
 disc_data = disc_domain.element(data)
 
 # Create operator
-conv = Convolution(disc_domain, disc_kernel, disc_adjkernel)
+conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel)
 #conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
+
+test = odl.test.OpeartorTest(conv)
+
+# Verify that the operator is correctly written.
+test.run_tests()
 
 # Calculate result
 result = conv(disc_data)
