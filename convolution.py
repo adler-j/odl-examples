@@ -63,6 +63,9 @@ nPointsKernel = np.array([2*n+1, 2*n+1])
 disc_domain = odl.l2_uniform_discretization(domain, nPoints)
 disc_kernel_domain = odl.l2_uniform_discretization(kernel_domain, nPointsKernel)
 
+Q = Difference(disc_domain)
+odl.test.OpeartorTest(Q).run_tests()
+
 # Discretize the functions
 disc_kernel = disc_kernel_domain.element(kernel)
 disc_adjkernel = disc_kernel_domain.element(adjkernel)
@@ -72,10 +75,8 @@ disc_data = disc_domain.element(data)
 conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel)
 #conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
 
-test = odl.test.OpeartorTest(conv)
-
 # Verify that the operator is correctly written.
-test.run_tests()
+odl.test.OpeartorTest(conv).run_tests()
 
 # Calculate result
 result = conv(disc_data)
@@ -118,6 +119,8 @@ plt.figure(); plt.imshow(x.asarray())
 
 #Tichonov reglarized conjugate gradient
 Q = Difference(disc_domain)
+odl.test.OpeartorTest(Q).run_tests()
+
 la = 0.0001
 regularized_conv = conv.T * conv + la * Q.T * Q
 plt.figure()
