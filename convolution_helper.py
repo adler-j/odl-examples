@@ -67,8 +67,8 @@ class FFTConvolution(odl.LinearOperator):
         super().__init__(space, space)
 
     def _apply(self, rhs, out):
-        out[:] = scipy.signal.fftconvolve(rhs.asarray(), 
-                                          self.kernel.asarray(),
+        out[:] = scipy.signal.fftconvolve(rhs, 
+                                          self.kernel,
                                           mode='same')
                          
         out *= self.scale

@@ -21,9 +21,10 @@ class Convolution(odl.LinearOperator):
         super().__init__(space, space)
 
     def _apply(self, rhs, out):
-        scipy.ndimage.convolve(rhs.asarray(), 
-                               self.kernel.asarray(),
-                               output=out.asarray())
+        scipy.ndimage.convolve(rhs, 
+                               self.kernel,
+                               output=out,
+                               mode='constant')
                          
         out *= self.scale
 
@@ -52,7 +53,7 @@ adjkernel = kernel_domain.element(adjkernel)
 data = domain.element(ind_fun)
 
 # Discretization parameters
-n = 100
+n = 50
 nPoints = np.array([n+1, n+1])
 nPointsKernel = np.array([2*n+1, 2*n+1])
 
@@ -71,7 +72,7 @@ disc_kernel.show(title='disc_kernel')
 
 
 # Create operator
-conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel)
+conv = Convolution(disc_domain, disc_kernel, disc_adjkernel)
 #conv = FFTConvolution(disc_domain, disc_kernel, disc_adjkernel) #sped up version
 
 # Verify that the operator is correctly written.
