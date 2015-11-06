@@ -61,7 +61,7 @@ class ForwardDiffAdj(odl.Operator):
             raise TypeError("space must be CudaRn")
 
         self.scale = scale
-        
+
         super().__init__(space, space, linear=True)
 
     def _apply(self, rhs, out):
@@ -132,13 +132,15 @@ cont_space = odl.L2(odl.Interval(0, 1))
 n = 1000
 
 # Discretization
-d = odl.l2_uniform_discretization(cont_space, n, impl='cuda')
-x = d.grid.meshgrid()[0]
-fun = d.element(5*np.logical_and(x>0.3, x<0.6).astype(float64) + np.random.rand(n))
+discr = odl.l2_uniform_discretization(cont_space, n, impl='cuda')
+x = discr.grid.meshgrid()[0]
+fun = discr.element(5*np.logical_and(x > 0.3, x < 0.6).astype(float64) +
+                    np.random.rand(n))
 plt.plot(fun)
 
 la = 0.00001
 mu = 100.0
 denoise(fun, la, mu, 200)
+plt.plot(fun)
 
 plt.show()
