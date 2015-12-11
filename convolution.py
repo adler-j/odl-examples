@@ -66,8 +66,8 @@ def adjkernel(x, y):
 
 
 # Continuous definition of problem
-domain = odl.L2(odl.Rectangle([-1, -1], [1, 1]))
-kernel_domain = odl.L2(odl.Rectangle([-2, -2], [2, 2]))
+domain = odl.FunctionSpace(odl.Rectangle([-1, -1], [1, 1]))
+kernel_domain = odl.FunctionSpace(odl.Rectangle([-2, -2], [2, 2]))
 
 # Complicated functions to check performance
 kernel = kernel_domain.element(kernel)
@@ -80,9 +80,9 @@ npoints = np.array([n+1, n+1])
 npoints_kernel = np.array([2*n+1, 2*n+1])
 
 # Discretization spaces
-disc_domain = odl.l2_uniform_discretization(domain, npoints)
-disc_kernel_domain = odl.l2_uniform_discretization(kernel_domain,
-                                                   npoints_kernel)
+disc_domain = odl.uniform_discr_fromspace(domain, npoints)
+disc_kernel_domain = odl.uniform_discr_fromspace(kernel_domain,
+                                                 npoints_kernel)
 
 # Discretize the functions
 disc_kernel = disc_kernel_domain.element(kernel)
@@ -116,7 +116,7 @@ iterations = 5
 # Display partial
 def show_line(data):
     plt.plot(data.asarray()[:, n//2])
-partial = odl.operator.solvers.ForEachPartial(show_line)
+partial = odl.solvers.util.ForEachPartial(show_line)
 
 
 # Norm calculator used in landweber
@@ -129,7 +129,7 @@ plt.figure()
 show_line(disc_phantom)
 
 x = disc_domain.zero()
-odl.operator.solvers.landweber(
+odl.solvers.landweber(
     conv, x, noisy_data, niter=iterations, omega=0.5/calc_norm(conv)**2,
     partial=partial)
 x.show(title='Landweber solution')
@@ -139,7 +139,7 @@ plt.figure()
 show_line(disc_phantom)
 
 x = disc_domain.zero()
-odl.operator.solvers.conjugate_gradient_normal(
+odl.solvers.conjugate_gradient_normal(
     conv, x, noisy_data, niter=iterations, partial=partial)
 x.show(title='CGN')
 
@@ -152,13 +152,13 @@ plt.figure()
 show_line(disc_phantom)
 
 x = disc_domain.zero()
-odl.operator.solvers.conjugate_gradient(
+odl.solvers.conjugate_gradient(
     regularized_conv, x, conv.adjoint(noisy_data),
     niter=iterations, partial=partial)
 x.show(title='Regularized Landweber solution')
 
-odl.test.OpeartorTest(conv).run_tests()
-odl.test.OpeartorTest(Q).run_tests()
-odl.test.OpeartorTest(regularized_conv).run_tests()
+#odl.diagnostics.OperatorTest(conv).run_tests()
+#odl.diagnostics.OperatorTest(Q).run_tests()
+#odl.diagnostics.OperatorTest(regularized_conv).run_tests()
 
 plt.show()
