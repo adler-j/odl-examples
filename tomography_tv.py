@@ -60,7 +60,7 @@ def TVreconstruct2D(A, x, rhs, la, mu, iterations=1, N=2):
 
     for i in odl.util.ProgressRange("denoising", iterations):
         for n in range(N):
-            # Solve tomography part
+            # Solve tomography part iteratively
             rhs = mu * Atf + la * diff.adjoint(d-b)
             odl.solvers.conjugate_gradient(op, x, rhs, niter=1)
 
@@ -76,27 +76,30 @@ def TVreconstruct2D(A, x, rhs, la, mu, iterations=1, N=2):
 
 n = 100
 
+# Create spaces
 d = odl.uniform_discr([0, 0], [1, 1], [n, n])
 ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), n])
 
+# Create phantom
 phantom = odl.util.shepp_logan(d)
 phantom.show()
 
-la = 2.0 / n
-mu = 500.0 * n
+# These are tuing parameters in the algorithm
+la = 2.0 / n # Relaxation
+mu = 500.0 * n # Data fidelity
 
+# Create projector
 A = ForwardProjector(d, ran)
+
+# Create data
 rhs = A(phantom)
-
-print(phantom.inner(A.adjoint(rhs)))
-print(A(phantom).inner(rhs))
-
 rhs.show()
+
+# Add noise
 rhs.ufunc.add(np.random.rand(ran.size)*0.05, out=rhs)
 rhs.show()
 
+# Reconstruct
 x = d.zero()
 TVreconstruct2D(A, x, rhs, la, mu, 50, 1)
-#odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=50)
-x.show()
 phantom.show()
