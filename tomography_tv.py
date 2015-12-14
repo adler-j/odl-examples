@@ -25,7 +25,8 @@ class ForwardProjector(odl.Operator):
         super().__init__(dom, ran, True)
 
     def _call(self, x):
-        return self.range.element(radon(x.asarray(), self.theta)) * 0.475 * np.sqrt(self.range.grid.cell_volume)
+        scale = self.range.grid.stride[0] * d.shape[0] / (d.shape[0] - 1.0)
+        return self.range.element(radon(x.asarray(), self.theta)) * scale
 
     @property
     def adjoint(self):
@@ -86,12 +87,16 @@ mu = 500.0 * n
 
 A = ForwardProjector(d, ran)
 rhs = A(phantom)
+
+print(phantom.inner(A.adjoint(rhs)))
+print(A(phantom).inner(rhs))
+
 rhs.show()
 rhs.ufunc.add(np.random.rand(ran.size)*0.05, out=rhs)
 rhs.show()
 
 x = d.zero()
-#TVreconstruct2D(A, x, rhs, la, mu, 50, 1)
-odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=10)
+TVreconstruct2D(A, x, rhs, la, mu, 50, 1)
+#odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=50)
 x.show()
 phantom.show()
