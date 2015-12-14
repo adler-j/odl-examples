@@ -18,26 +18,19 @@ def TVdenoise2D(x, la, mu, iterations=1):
     dimension = diff.range.size
 
     f = x.copy()
-
     b = diff.range.zero()
     d = diff.range.zero()
-    tmp = diff.domain.zero()
 
     scale = 1 / diff.domain.grid.cell_volume
     for i in odl.util.ProgressRange("denoising", iterations):
+        # Iterate using gauss-seidel
         x = (f * mu + (diff.adjoint(diff(x)) + scale*x + diff.adjoint(d-b)) * la)/(mu+dimension*la)
 
-        d = diff(x) + b
-
-        for i in range(dimension):
-            # tmp = d/abs(d)
-            d[i].ufunc.sign(tmp)
-
-            # d = sign(diff(x)+b) * max(|diff(x)+b|-la^-1,0)
-            d[i].ufunc.absolute(out=d[i])
-            d[i].ufunc.add(-1.0/la, out=d[i])
-            d[i].ufunc.maximum(0.0, out=d[i])
-            d[i] *= tmp
+        # d = sign(diff(x)+b) * max(|diff(x)+b|-la^-1,0)
+        s = diff(x) + b
+        d = s.ufunc.sign() * (s.ufunc.absolute().
+                              ufunc.add(-1.0/la).
+                              ufunc.maximum(0.0))
 
         b = b + diff(x) - d
 

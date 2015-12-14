@@ -47,35 +47,27 @@ class BackProjector(odl.Operator):
         return ForwardProjector(self.range, self.domain)
 
 
-def TVreconstruct2D(A, x, rhs, la, mu, iterations=1):
+def TVreconstruct2D(A, x, rhs, la, mu, iterations=1, N=2):
     diff = odl.DiscreteGradient(x.space, method='forward')
-
-    dimension = diff.range.size
 
     Atf = A.adjoint(rhs)
 
     b = diff.range.zero()
     d = diff.range.zero()
-    tmp = diff.domain.zero()
 
-    op = mu * A.adjoint * A - la * (diff.adjoint * diff)
+    op = mu * (A.adjoint * A) + la * (diff.adjoint * diff)
 
     for i in odl.util.ProgressRange("denoising", iterations):
-        rhs = mu * Atf + la * diff.adjoint(d-b)
-
-        odl.solvers.conjugate_gradient(op, x, rhs, niter=10)
-
-        d = diff(x) + b
-
-        for i in range(dimension):
-            # tmp = d/abs(d)
-            d[i].ufunc.sign(tmp)
+        for n in range(N):
+            # Solve tomography part
+            rhs = mu * Atf + la * diff.adjoint(d-b)
+            odl.solvers.conjugate_gradient(op, x, rhs, niter=1)
 
             # d = sign(diff(x)+b) * max(|diff(x)+b|-la^-1,0)
-            d[i].ufunc.absolute(out=d[i])
-            d[i].ufunc.add(-1.0/la, out=d[i])
-            d[i].ufunc.maximum(0.0, out=d[i])
-            d[i] *= tmp
+            s = diff(x) + b
+            d = s.ufunc.sign() * (s.ufunc.absolute().
+                                  ufunc.add(-1.0/la).
+                                  ufunc.maximum(0.0))
 
         b = b + diff(x) - d
 
@@ -89,14 +81,17 @@ ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), n])
 phantom = odl.util.shepp_logan(d)
 phantom.show()
 
-la = 0.01 / n
-mu = 20.0 * n
+la = 2.0 / n
+mu = 500.0 * n
 
 A = ForwardProjector(d, ran)
 rhs = A(phantom)
-rhs.ufunc.add(np.random.rand(ran.size)*0.01, out=rhs)
+rhs.show()
+rhs.ufunc.add(np.random.rand(ran.size)*0.05, out=rhs)
 rhs.show()
 
 x = d.zero()
-TVreconstruct2D(A, x, rhs, la, mu, 50)
+#TVreconstruct2D(A, x, rhs, la, mu, 50, 1)
+odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=10)
+x.show()
 phantom.show()
