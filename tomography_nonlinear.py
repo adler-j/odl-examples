@@ -62,7 +62,6 @@ A = BeamHardeningProjector(proj, np.linspace(0.3, 1, 10))
 # Create data
 rhs = A(phantom)
 
-der = A.derivative(d.zero())
 
 # Reconstruct
 def fun(x):
@@ -70,9 +69,9 @@ def fun(x):
 
 partial = odl.solvers.util.ForEachPartial(fun)
 
-x = d.one()
-odl.solvers.landweber(A.derivative(x), x, rhs, 5, 0.02)#, partial)
-#odl.solvers.landweber(A, x, rhs, 100, 0.02)
-#x.show()
-#x.show(indices=np.s_[:,50])
+x = d.one() * phantom.ufunc.mean()
+#odl.solvers.landweber(A.derivative(x), x, rhs, 5, 0.02)#
+odl.solvers.landweber(A, x, rhs, 100, 0.03, partial)
+x.show()
+x.show(indices=np.s_[:,50])
 

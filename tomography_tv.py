@@ -18,29 +18,38 @@ import odl
 from tomography_helper import ForwardProjector
 
 
-def TVreconstruct2D(A, x, rhs, la, mu, iterations=1, N=2):
-    diff = odl.DiscreteGradient(x.space, method='forward')
+def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
+    """ Reconstruct with split Bregman.
 
+    Parameters
+    ----------
+        A : `odl.Operator`
+            Pojector
+        Phi : `odl.Operator`
+            Sparsifying transform
+        x : ``A.domain`` element
+
+    """
     Atf = A.adjoint(rhs)
 
-    b = diff.range.zero()
-    d = diff.range.zero()
+    b = Phi.range.zero()
+    d = Phi.range.zero()
 
-    op = mu * (A.adjoint * A) + la * (diff.adjoint * diff)
+    op = mu * (A.adjoint * A) + la * (Phi.adjoint * Phi)
 
-    for i in odl.util.ProgressRange("denoising", iterations):
+    for i in range(iterations):
         for n in range(N):
             # Solve tomography part iteratively
-            rhs = mu * Atf + la * diff.adjoint(d-b)
+            rhs = mu * Atf + la * Phi.adjoint(d-b)
             odl.solvers.conjugate_gradient(op, x, rhs, niter=1)
 
-            # d = sign(diff(x)+b) * max(|diff(x)+b|-la^-1,0)
-            s = diff(x) + b
+            # d = sign(Phi(x)+b) * max(|Phi(x)+b|-la^-1,0)
+            s = Phi(x) + b
             d = s.ufunc.sign() * (s.ufunc.absolute().
                                   ufunc.add(-1.0/la).
                                   ufunc.maximum(0.0))
 
-        b = b + diff(x) - d
+        b = b + Phi(x) - d
 
         x.show()
 
@@ -48,17 +57,18 @@ n = 100
 
 # Create spaces
 d = odl.uniform_discr([0, 0], [1, 1], [n, n])
-ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), n])
+ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), 30])
 
 # Create phantom
 phantom = odl.util.shepp_logan(d)
 phantom.show()
 
 # These are tuing parameters in the algorithm
-la = 2.0 / n  # Relaxation
-mu = 500.0 * n  # Data fidelity
+la = 3.0 / n  # Relaxation
+mu = 1000.0 * n  # Data fidelity
 
 # Create projector
+diff = odl.DiscreteGradient(d, method='forward')
 A = ForwardProjector(d, ran)
 
 # Create data
@@ -66,10 +76,10 @@ rhs = A(phantom)
 rhs.show()
 
 # Add noise
-rhs.ufunc.add(np.random.rand(ran.size)*0.05, out=rhs)
+rhs.ufunc.add(np.random.rand(ran.size)*0.02, out=rhs)
 rhs.show()
 
 # Reconstruct
 x = d.zero()
-TVreconstruct2D(A, x, rhs, la, mu, 50, 1)
+SplitBregmanReconstruct(A, diff, x, rhs, la, mu, 50, 1)
 phantom.show()
