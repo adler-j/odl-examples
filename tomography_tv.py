@@ -30,6 +30,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
         x : ``A.domain`` element
 
     """
+    isotropic = True
     Atf = A.adjoint(rhs)
 
     b = Phi.range.zero()
@@ -37,6 +38,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
 
     op = mu * (A.adjoint * A) + la * (Phi.adjoint * Phi)
 
+    fig = None
     for i in range(iterations):
         for n in range(N):
             # Solve tomography part iteratively
@@ -44,28 +46,33 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
             odl.solvers.conjugate_gradient(op, x, rhs, niter=1)
 
             # d = sign(Phi(x)+b) * max(|Phi(x)+b|-la^-1,0)
-            s = Phi(x) + b
-            d = s.ufunc.sign() * (s.ufunc.absolute().
-                                  ufunc.add(-1.0/la).
-                                  ufunc.maximum(0.0))
+            if isotropic:
+                s = Phi(x) + b
+                sn = sum((Phi(x) + b)**2, A.domain.zero())
+                for i in range(A.domain.ndim):
+                    d[i] = sn.ufunc.add(-1.0/la).ufunc.maximum(0.0) * s[i] / sn
+            else:
+                s = Phi(x) + b
+                d = s.ufunc.sign() * (s.ufunc.absolute().
+                                      ufunc.add(-1.0/la).
+                                      ufunc.maximum(0.0))
 
         b = b + Phi(x) - d
 
-        x.show()
+        fig = x.show(clim=[0, 1], fig=fig)
 
-n = 100
+n = 200
 
 # Create spaces
 d = odl.uniform_discr([0, 0], [1, 1], [n, n])
-ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), 30])
+ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), n])
 
 # Create phantom
 phantom = odl.util.shepp_logan(d)
-phantom.show()
 
 # These are tuing parameters in the algorithm
 la = 3.0 / n  # Relaxation
-mu = 1000.0 * n  # Data fidelity
+mu = 200.0 * n  # Data fidelity
 
 # Create projector
 diff = odl.DiscreteGradient(d, method='forward')
@@ -73,13 +80,11 @@ A = ForwardProjector(d, ran)
 
 # Create data
 rhs = A(phantom)
-rhs.show()
 
 # Add noise
 rhs.ufunc.add(np.random.rand(ran.size)*0.02, out=rhs)
-rhs.show()
 
 # Reconstruct
 x = d.zero()
-SplitBregmanReconstruct(A, diff, x, rhs, la, mu, 50, 1)
+SplitBregmanReconstruct(A, diff, x, rhs, la, mu, 500, 1)
 phantom.show()
