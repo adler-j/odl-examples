@@ -69,7 +69,7 @@ mu = 20000. / n  # Data fidelity
 
 # Create projector
 Phi = odl.trafos.DiscreteWaveletTransform(d, nscales=4,
-                                         wbasis='db1', mode='per')
+                                          wbasis='db1', mode='per')
 #Phi = odl.DiscreteGradient(d, method='forward')
 A = ForwardProjector(d, ran)
 
