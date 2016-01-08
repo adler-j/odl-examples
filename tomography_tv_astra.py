@@ -17,7 +17,8 @@ import numpy as np
 import odl
 
 
-def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
+def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu,
+                            iterations=1, N=1, isotropic=True):
     """ Reconstruct with split Bregman.
 
     Parameters
@@ -29,7 +30,6 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
         x : ``A.domain`` element
 
     """
-    isotropic = True
     Atf = A.adjoint(rhs)
 
     b = Phi.range.zero()
@@ -61,6 +61,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
         fig = x.show(clim=[0, 1], fig=fig, show=True,
                      title='iteration {}'.format(i))
 
+
 n = 200
 n_voxel = [n]*3
 n_pixel = [n]*2
@@ -85,15 +86,15 @@ geom = odl.tomo.CircularConeFlatGeometry(angle_intvl, dparams,
 A = odl.tomo.DiscreteXrayTransform(discr_reco_space, geom,
                                    backend='astra_cuda')
 
-# Create spaces
-ran = A.range
-
 # Create phantom
-phantom = odl.util.shepp_logan(discr_reco_space)
+phantom = odl.util.shepp_logan(discr_reco_space, True)
+
+# Adjoint currently bugged, needs to be fixed
+A._adjoint *= A(phantom).inner(A(phantom)) / phantom.inner(A.adjoint(A(phantom)))
 
 # These are tuing parameters in the algorithm
-la = 3.0 / n  # Relaxation
-mu = 200.0 * n  # Data fidelity
+la = 30.0 / n  # Relaxation
+mu = 0.03 * n  # Data fidelity
 
 # Create projector
 diff = odl.DiscreteGradient(discr_reco_space, method='forward')
@@ -103,7 +104,7 @@ rhs = A(phantom)
 
 # Add noise
 mean = rhs.ufunc.sum() / rhs.size
-rhs.ufunc.add(np.random.rand(ran.size)*0.5*mean, out=rhs)
+rhs.ufunc.add(np.random.rand(A.range.size)*0.5*mean, out=rhs)
 
 # Reconstruct
 x = discr_reco_space.zero()

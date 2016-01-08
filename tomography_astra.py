@@ -26,7 +26,7 @@ discr_reco_space = odl.uniform_discr([-20, -20, -20], [20, 20, 20],
                                      n_voxel, dtype='float32')
 
 # Geometry
-src_rad = 1000
+src_rad = 100
 det_rad = 100
 angle_intvl = odl.Interval(0, 2 * np.pi)
 dparams = odl.Rectangle([-50, -50], [50, 50])
@@ -40,36 +40,23 @@ geom = odl.tomo.CircularConeFlatGeometry(angle_intvl, dparams,
 A = odl.tomo.DiscreteXrayTransform(discr_reco_space, geom,
                                    backend='astra_cuda')
 
-# Create spaces
-ran = A.range
-
 # Create phantom
-phantom = odl.util.shepp_logan(discr_reco_space)
+phantom = odl.util.shepp_logan(discr_reco_space, True)
 
-# These are tuing parameters in the algorithm
-la = 3.0 / n  # Relaxation
-mu = 200.0 * n  # Data fidelity
-
-# Create projector
-diff = odl.DiscreteGradient(discr_reco_space, method='forward')
+# Adjoint currently bugged, needs to be fixed
+A._adjoint *= A(phantom).inner(A(phantom)) / phantom.inner(A.adjoint(A(phantom)))
 
 # Create data
 rhs = A(phantom)
 
 # Add noise
 mean = rhs.ufunc.sum() / rhs.size
-rhs.ufunc.add(np.random.rand(ran.size)*0.0*mean, out=rhs)
+rhs.ufunc.add(np.random.rand(A.range.size)*0.5*mean, out=rhs)
 
 # Reconstruct
-
-
-def plot(result, fig=None):
-    print(x.ufunc.max())
-    plot.fig = x.show(fig=plot.fig, show=True)
-plot.fig = None
-
-partial = odl.solvers.util.ForEachPartial(plot)
+partial = (odl.solvers.util.ShowPartial(clim=[0, 1]) &
+           odl.solvers.util.PrintIterationPartial())
 
 x = discr_reco_space.zero()
-odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=50, partial=partial)
+odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=80, partial=partial)
 phantom.show()
