@@ -42,7 +42,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
         for n in range(N):
             # Solve tomography part iteratively
             rhs = mu * Atf + la * Phi.adjoint(d-b)
-            odl.solvers.conjugate_gradient(op, x, rhs, niter=1)
+            odl.solvers.conjugate_gradient(op, x, rhs, niter=2)
 
             # d = sign(Phi(x)+b) * max(|Phi(x)+b|-la^-1,0)
             s = Phi(x) + b
@@ -54,7 +54,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
 
         fig = x.show(clim=[0.0, 1.1], fig=fig)
 
-n = 50
+n = 100
 
 # Create spaces
 d = odl.uniform_discr([0, 0], [1, 1], [n, n])
@@ -68,9 +68,9 @@ la = 500. / n  # Relaxation
 mu = 20000. / n  # Data fidelity
 
 # Create projector
-Phi = odl.trafos.DiscreteWaveletTransform(d, nscales=4,
-                                          wbasis='db1', mode='per')
-#Phi = odl.DiscreteGradient(d, method='forward')
+Phi = odl.trafos.DiscreteWaveletTransform(d, nscales=3,
+                                          wbasis='db2', mode='per')
+
 A = ForwardProjector(d, ran)
 
 # Create data
@@ -81,5 +81,6 @@ rhs.ufunc.add(np.random.rand(ran.size)*0.05, out=rhs)
 
 # Reconstruct
 x = d.zero()
-SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, 500, 1)
-phantom.show()
+#odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=7)
+SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, 100, 1)
+x.show()

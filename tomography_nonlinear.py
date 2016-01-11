@@ -62,16 +62,14 @@ A = BeamHardeningProjector(proj, np.linspace(0.3, 1, 10))
 # Create data
 rhs = A(phantom)
 
+fig = phantom.show()
 
 # Reconstruct
 def fun(x):
-    x.show()
+    x.show(fig=fig)
 
 partial = odl.solvers.util.ForEachPartial(fun)
 
-x = d.one() * phantom.ufunc.mean()
+x = d.one() * phantom.ufunc.sum() / n**2
 #odl.solvers.landweber(A.derivative(x), x, rhs, 5, 0.02)#
 odl.solvers.landweber(A, x, rhs, 100, 0.03, partial)
-x.show()
-x.show(indices=np.s_[:,50])
-
