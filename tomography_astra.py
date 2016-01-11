@@ -17,21 +17,18 @@ import numpy as np
 import odl
 
 n = 200
-n_voxel = [n]*3
-n_pixel = [n]*2
-n_angle = n
 
 # Discrete reconstruction space
 discr_reco_space = odl.uniform_discr([-20, -20, -20], [20, 20, 20],
-                                     n_voxel, dtype='float32')
+                                     [n]*3, dtype='float32')
 
 # Geometry
 src_rad = 100
 det_rad = 100
 angle_intvl = odl.Interval(0, 2 * np.pi)
 dparams = odl.Rectangle([-50, -50], [50, 50])
-agrid = odl.uniform_sampling(angle_intvl, n_angle)
-dgrid = odl.uniform_sampling(dparams, n_pixel)
+agrid = odl.uniform_sampling(angle_intvl, n)
+dgrid = odl.uniform_sampling(dparams, [n]*2)
 geom = odl.tomo.CircularConeFlatGeometry(angle_intvl, dparams,
                                          src_rad, det_rad,
                                          agrid, dgrid)
