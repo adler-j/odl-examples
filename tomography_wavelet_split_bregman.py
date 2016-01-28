@@ -52,7 +52,7 @@ def SplitBregmanReconstruct(A, Phi, x, rhs, la, mu, iterations=1, N=1):
 
         b = b + Phi(x) - d
 
-        fig = x.show(clim=[0.0, 1.1], fig=fig)
+        fig = x.show(clim=[0.0, 1.1], fig=fig, show=True)
 
 n = 100
 

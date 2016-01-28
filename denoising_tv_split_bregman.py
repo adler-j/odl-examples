@@ -13,13 +13,15 @@ import odl
 
 
 def TVdenoise2D(x, la, mu, iterations=1):
-    diff = odl.DiscreteGradient(x.space, method='forward')
+    diff = odl.Gradient(x.space, method='forward')
 
     dimension = diff.range.size
 
     f = x.copy()
     b = diff.range.zero()
     d = diff.range.zero()
+
+    fig = None
 
     scale = 1 / diff.domain.grid.cell_volume
     for i in odl.util.ProgressRange("denoising", iterations):
@@ -34,13 +36,13 @@ def TVdenoise2D(x, la, mu, iterations=1):
 
         b = b + diff(x) - d
 
-        x.show()
+        fig = x.show(fig=fig)
 
 n = 200
 
 d = odl.uniform_discr([-1, -1], [1, 1], [n, n])
 
-phantom = odl.util.shepp_logan(d)
+phantom = odl.util.shepp_logan(d, True)
 phantom.ufunc.add(np.random.rand(n*n)*0.1, out=phantom)
 phantom.show()
 

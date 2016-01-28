@@ -24,10 +24,8 @@ from builtins import super
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy
+import scipy.ndimage
 import odl
-
-# Helper
-from convolution_helper import Difference, FFTConvolution
 
 
 class Convolution(odl.Operator):
@@ -38,7 +36,7 @@ class Convolution(odl.Operator):
 
         super().__init__(space, space, linear=True)
 
-    def _apply(self, rhs, out):
+    def _call(self, rhs, out):
         scipy.ndimage.convolve(rhs,
                                self.kernel,
                                output=out.asarray(),
@@ -51,18 +49,20 @@ class Convolution(odl.Operator):
         return Convolution(self.domain, self.adjkernel, self.kernel)
 
 
-def ind_fun(x, y):
+def ind_fun(points):
+    x, y = points
     return ((x-0.1)**2 + y**2 <= 0.5**2).astype(float)
 
 
-def kernel(x, y):
-    mean = [0.0, 0.25]
+def kernel(x):
+    mean = [0.0, 0.5]
     std = [0.05, 0.05]
-    return np.exp(-(((x-mean[0])/std[0])**2 + ((y-mean[1])/std[1])**2))
+    return np.exp(-(((x[0] - mean[0]) / std[0]) ** 2 + ((x[1] - mean[1]) /
+                                                        std[1]) ** 2))
 
 
-def adjkernel(x, y):
-    return kernel(-x, -y)
+def adjkernel(x):
+    return kernel((-x[0], -x[1]))
 
 
 # Continuous definition of problem
@@ -109,15 +109,6 @@ noisy_data = data + np.random.randn(*npoints) * data.asarray().mean()
 data.show(title='Data')
 noisy_data.show(title='Noisy data')
 
-# Number of iterations
-iterations = 5
-
-
-# Display partial
-def show_line(data):
-    plt.plot(data.asarray()[:, n//2])
-partial = odl.solvers.util.ForEachPartial(show_line)
-
 
 # Norm calculator used in landweber
 def calc_norm(operator):
@@ -125,40 +116,26 @@ def calc_norm(operator):
 
 
 # Test Landweber
-plt.figure()
-show_line(disc_phantom)
-
+partial = odl.solvers.ShowPartial(title='Landweber solution')
 x = disc_domain.zero()
 odl.solvers.landweber(
-    conv, x, noisy_data, niter=iterations, omega=0.5/calc_norm(conv)**2,
+    conv, x, noisy_data, niter=5, omega=0.5/calc_norm(conv)**2,
     partial=partial)
-x.show(title='Landweber solution')
 
 # Test CGN
-plt.figure()
-show_line(disc_phantom)
-
+partial = odl.solvers.ShowPartial(title='CGN')
 x = disc_domain.zero()
 odl.solvers.conjugate_gradient_normal(
-    conv, x, noisy_data, niter=iterations, partial=partial)
-x.show(title='CGN')
+    conv, x, noisy_data, niter=5, partial=partial)
 
 # Tikhonov reglarized conjugate gradient (C*C + lambda*Q*Q)
-Q = Difference(disc_domain)
-la = 0.0001
+partial = odl.solvers.ShowPartial(title='Tikhonov regularized')
+Q = odl.Gradient(disc_domain, 'forward')
+la = 0.0000001
 regularized_conv = conv.adjoint * conv + la * Q.adjoint * Q
-
-plt.figure()
-show_line(disc_phantom)
 
 x = disc_domain.zero()
 odl.solvers.conjugate_gradient(
     regularized_conv, x, conv.adjoint(noisy_data),
-    niter=iterations, partial=partial)
-x.show(title='Regularized Landweber solution')
-
-#odl.diagnostics.OperatorTest(conv).run_tests()
-#odl.diagnostics.OperatorTest(Q).run_tests()
-#odl.diagnostics.OperatorTest(regularized_conv).run_tests()
-
+    niter=20, partial=partial)
 plt.show()

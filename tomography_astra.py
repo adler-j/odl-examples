@@ -23,7 +23,7 @@ discr_reco_space = odl.uniform_discr([-20, -20, -20], [20, 20, 20],
                                      [n]*3, dtype='float32')
 
 # Geometry
-src_rad = 100
+src_rad = 1000
 det_rad = 100
 angle_intvl = odl.Interval(0, 2 * np.pi)
 dparams = odl.Rectangle([-50, -50], [50, 50])
@@ -48,12 +48,12 @@ rhs = A(phantom)
 
 # Add noise
 mean = rhs.ufunc.sum() / rhs.size
-rhs.ufunc.add(np.random.rand(A.range.size)*0.5*mean, out=rhs)
+rhs.ufunc.add(np.random.rand(A.range.size)*1.0*mean, out=rhs)
 
 # Reconstruct
-partial = (odl.solvers.util.ShowPartial(clim=[0, 1]) &
+partial = (odl.solvers.util.ShowPartial(clim=[0, 1.1]) &
            odl.solvers.util.PrintIterationPartial())
 
 x = discr_reco_space.zero()
-odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=80, partial=partial)
+odl.solvers.conjugate_gradient_normal(A, x, rhs, niter=100, partial=partial)
 phantom.show()
