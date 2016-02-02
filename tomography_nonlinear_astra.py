@@ -92,10 +92,6 @@ phantom = odl.util.shepp_logan(A.domain, False)
 # Create data
 rhs = A(phantom)
 
-partial = (odl.solvers.util.ShowPartial(clim=[0.7, 1.3]) &
-           odl.solvers.util.ShowPartial(indices=np.s_[:, n//2, n//2]) &
-           odl.solvers.util.PrintTimingPartial() &
-           odl.solvers.util.PrintIterationPartial())
 
 dA = A.derivative(phantom)
 norm2 = dA.adjoint(dA(phantom)).norm() / phantom.norm()
@@ -106,6 +102,11 @@ x = A.domain.one() * (phantom.ufunc.sum() / n**3)
 def make_positive(x):
     x.ufunc.maximum(0.0, out=x)
 
+partial = (odl.solvers.util.ShowPartial(clim=[0.7, 1.3]) &
+           odl.solvers.util.ShowPartial(indices=np.s_[:, n//2, n//2]) &
+           odl.solvers.util.PrintTimingPartial() &
+           odl.solvers.util.PrintIterationPartial())
+
 #raise Exception
-odl.solvers.landweber(A, x, rhs, niter=10, omega=1.0 / norm2, partial=partial,
+odl.solvers.landweber(A, x, rhs, niter=50, omega=1.0 / norm2, partial=partial,
                       projection=make_positive)

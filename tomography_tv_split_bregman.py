@@ -68,14 +68,14 @@ d = odl.uniform_discr([0, 0], [1, 1], [n, n])
 ran = odl.uniform_discr([0, 0], [1, np.pi], [np.ceil(np.sqrt(2) * n), n])
 
 # Create phantom
-phantom = odl.util.shepp_logan(d)
+phantom = odl.util.shepp_logan(d, modified=True)
 
 # These are tuing parameters in the algorithm
 la = 3.0 / n  # Relaxation
 mu = 200.0 * n  # Data fidelity
 
 # Create projector
-diff = odl.DiscreteGradient(d, method='forward')
+diff = odl.Gradient(d, method='forward')
 A = ForwardProjector(d, ran)
 
 # Create data

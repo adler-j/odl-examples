@@ -105,7 +105,7 @@ la = 30.0 / n  # Relaxation
 mu = 0.1 * n  # Data fidelity
 
 # Create projector
-diff = odl.DiscreteGradient(discr_reco_space, method='forward')
+diff = odl.Gradient(discr_reco_space, method='forward')
 
 
 # Add noise
