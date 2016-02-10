@@ -65,7 +65,7 @@ class LinearDeformation(odl.Operator):
         return out_values
 
 # Discretization of the space
-m = 50  # Number of gridpoints for discretization
+m = 100  # Number of gridpoints for discretization
 spc = odl.uniform_discr([0, 0], [1, 1], [m, m])
 
 # deformation space
@@ -76,7 +76,7 @@ vspace = odl.ProductSpace(odl.uniform_discr([0, 0], [1, 1], [n, n]), 2)
 deformation = LinearDeformation(spc, vspace, vspace[0].grid, sigma=0.2)
 
 # Create input function
-f = spc.element(lambda x: np.sin(x[0] * 10) + np.cos(x[1] * 10))
+f = odl.util.shepp_logan(spc, True)
 
 # Create deformation field
 values = np.zeros([2, n, n])
