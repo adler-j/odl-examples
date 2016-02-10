@@ -24,29 +24,37 @@ def mu(E):
 
 
 class BeamHardeningProjector(odl.Operator):
-    def __init__(self, projector, energies):
+    def __init__(self, projector, energies, spectrum):
         self.projector = projector
         self.energies = energies
+
+        self.spectrum = spectrum
+        assert np.sum(spectrum) == 1.0
+
         super().__init__(projector.domain, projector.range, False)
 
-    def _call(self, x):
-        Ax = self.projector(x)
+    def _call(self, x, **kwargs):
+        Ahatx = kwargs.pop('Ahatx', None)
+        if Ahatx is None:
+            Ahatx = self.projector(x)
 
         result = self.range.zero()
         for E in self.energies:
-            result += (-mu(E) * Ax).ufunc.exp()
+            result += (-mu(E) * Ahatx).ufunc.exp()
         return -(result / len(self.energies)).ufunc.log()
 
     def derivative(self, x):
-        Ax = self(x)
         Ahatx = self.projector(x)
+
+        Ax = self(x, Ahatx=Ahatx)
+
         scale = self.range.zero()
         for E in self.energies:
             scale += mu(E) * (Ax - mu(E) * Ahatx).ufunc.exp()
 
         return (scale / len(self.energies)) * self.projector
 
-n = 100
+n = 200
 
 # Create spaces
 d = odl.uniform_discr([0, 0], [1, 1], [n, n])
@@ -57,12 +65,14 @@ phantom = odl.util.shepp_logan(d, False)
 
 # Create projector
 proj = ForwardProjector(d, ran)
-A = BeamHardeningProjector(proj, np.linspace(0.3, 1, 3))
+energies = np.linspace(0.7, 1, 3)
+spectrum = np.array([0.5, 1.0, 0.5]) / 2.0
+A = BeamHardeningProjector(proj, energies, spectrum)
 
 # Create data
 rhs = A(phantom)
 
-partial = (odl.solvers.util.ShowPartial(clim=[0.9, 1.1]) &
+partial = (odl.solvers.util.ShowPartial(clim=[0.7, 1.3]) &
            odl.solvers.util.ShowPartial(indices=np.s_[:, n//2]) &
            odl.solvers.util.PrintIterationPartial())
 
@@ -70,5 +80,10 @@ dA = A.derivative(phantom)
 norm2 = dA.adjoint(dA(phantom)).norm() / phantom.norm()
 
 x = d.one() * (phantom.ufunc.sum() / n**2)
-odl.solvers.landweber(A, x, rhs, 100, 0.05 / norm2, partial)
-#odl.solvers.landweber(dA, x, rhs, 100, 0.03 / norm2, partial)
+dA = A.derivative(x)
+
+def make_positive(x):
+    x.ufunc.maximum(0.0, out=x)
+
+odl.solvers.landweber(A, x, rhs, 100, 1.0 / norm2, partial=partial,
+                      projection=make_positive)

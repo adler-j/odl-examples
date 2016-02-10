@@ -53,7 +53,7 @@ mean = rhs.ufunc.sum() / rhs.size
 rhs.ufunc.add(np.random.rand(A.range.size)*1.0*mean, out=rhs)
 
 # Create chambolle pock operator
-grad = odl.DiscreteGradient(discr_reco_space, method='forward')
+grad = odl.Gradient(discr_reco_space, method='forward')
 prod_op = odl.ProductSpaceOperator([[A], [grad]])
 
 # Get norm

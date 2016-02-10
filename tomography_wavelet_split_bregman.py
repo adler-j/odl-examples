@@ -68,8 +68,7 @@ la = 500. / n  # Relaxation
 mu = 20000. / n  # Data fidelity
 
 # Create projector
-Phi = odl.trafos.DiscreteWaveletTransform(d, nscales=3,
-                                          wbasis='db2', mode='per')
+Phi = odl.trafos.WaveletTransform(d, nscales=3, wbasis='db2', mode='per')
 
 A = ForwardProjector(d, ran)
 
