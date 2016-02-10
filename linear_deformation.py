@@ -46,7 +46,7 @@ class LinearDeformation(odl.Operator):
     def _call(self, x):
         # Unpack input
         f, alphas = x
-        extension = f.extension
+        extension = f.space.extension(f.ntuple)  # this syntax is improved in pull #276
 
         # Array of output values
         out_values = np.zeros(f.size)
