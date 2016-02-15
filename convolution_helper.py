@@ -35,7 +35,7 @@ class FFTConvolution(odl.Operator):
 
         super().__init__(space, space, linear=True)
 
-    def _apply(self, rhs, out):
+    def _call(self, rhs, out):
         out[:] = scipy.signal.fftconvolve(rhs,
                                           self.kernel,
                                           mode='same')
