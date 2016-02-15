@@ -22,11 +22,9 @@ def v(x, grid, alphas, sigma):
     """ Calculate the translation at point x """
     alpha1, alpha2 = alphas  # unpack translations per direction
     result = np.zeros_like(x)
-    scale = 0.0  # Rescale the result by the magnitude of the kernels
     for i, (point, a1, a2) in enumerate(zip(grid.points(), alpha1, alpha2)):
         result += K(x, point, sigma).dot([a1, a2]).squeeze()
-        scale += np.linalg.norm(K(x, point, sigma))
-    return result / scale
+    return result
 
 
 class LinearDeformation(odl.Operator):
@@ -80,7 +78,7 @@ f = odl.util.shepp_logan(spc, True)
 
 # Create deformation field
 values = np.zeros([2, n, n])
-values[0, :, :n//2] = 0.3  # movement in "x" direction
+values[0, :, :n//2] = 0.1  # movement in "x" direction
 values[1, n//2, :] = 0.1   # movement in "y" direction
 def_coeff = vspace.element(values)
 
